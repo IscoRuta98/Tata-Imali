@@ -1,0 +1,59 @@
+<ion-content [fullscreen]="true" class="Rectangle4586">
+  <ion-grid class="h-full" style="margin-bottom: 20px">
+    <ion-row class="h-full content-around px-5">
+      <ion-col size="12">
+        <img
+          src="assets/tata-imali-logo.png"
+          class="block mx-auto rounded-full w-3/5"
+        />
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+
+  <div class="Loans">
+    <ion-text>
+      <h3>Loans</h3>
+    </ion-text>
+  </div>
+
+  <ion-card class="Rectangle4588">
+    <ion-segment [(ngModel)]="selectTabs">
+      <ion-segment-button value="requestNew">
+        <ion-label color="light">Request New</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="settleDebt">
+        <ion-label color="light">Settle Debt</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+
+    <div *ngIf="selectTabs === 'requestNew'" class="Rectangle4589">
+      <ion-text class="ion-text-center p-2">
+        <h4>New Loan</h4>
+        <ion-input
+          type="number"
+          placeholder="Enter Loan"
+          style="
+            width: 84px;
+            height: 42px;
+            background: #484848;
+            border-radius: 8px;
+            align-items: center;
+          "
+        >
+        </ion-input>
+      </ion-text>
+      <ion-button
+        style="
+          width: 112px;
+          height: 42px;
+          background: #d5ff0a;
+          border-radius: 8px;
+        "
+      >
+        Submit
+      </ion-button>
+    </div>
+
+    <div *ngIf="selectTabs === 'settleDebt'" class="Rectangle4589"></div>
+  </ion-card>
+</ion-content>
