@@ -1,5 +1,8 @@
 from odmantic import Model
 from pydantic import BaseModel
+from typing import Any
+
+from algosdk.atomic_transaction_composer import AccountTransactionSigner
 
 
 class UserInformation(BaseModel):
@@ -24,3 +27,4 @@ class UserDetailStorable(Model):
     hash_password: str
     algorandAddress: str
     algorandPrivateKey: str
+    algorandTransactionSigner: Any

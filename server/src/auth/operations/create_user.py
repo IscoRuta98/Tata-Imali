@@ -1,6 +1,9 @@
 from fastapi import HTTPException
 from passlib.context import CryptContext
-from algorand.generate_account import generate_keypair
+
+from algorand.generate_account import generate_keypair, fund_new_account
+from algosdk.atomic_transaction_composer import (
+    AccountTransactionSigner)
 
 from common.types import Engine
 from auth.schema.actions import (
@@ -19,7 +22,7 @@ def password_hash(password: str) -> str:
 
 async def create_user(engine: Engine, params: CreateUser) -> CreateUserResult:
     """
-    User Creation.
+    Create User and fund their wallet.
     """
     existingUsername = await engine.find_one(
         UserDetailStorable, UserDetailStorable.userName == params.userName
@@ -29,12 +32,16 @@ async def create_user(engine: Engine, params: CreateUser) -> CreateUserResult:
     hash_password = password_hash(params.password)
     private_key, address = generate_keypair()
 
+    # Fund new account with 1 ALGO
+    fund_new_account(address)
+
     new_user = UserDetailStorable(
         userName=params.userName,
         phoneNumber=params.phoneNumber,
         hash_password=hash_password,
         algorandAddress=address,
         algorandPrivateKey=private_key,
+        algorandTransactionSigner = AccountTransactionSigner(private_key)
     )
     await engine.save(new_user)
     user_display = UserInformation(

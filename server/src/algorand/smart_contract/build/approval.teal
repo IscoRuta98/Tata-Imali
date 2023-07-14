@@ -1,0 +1,422 @@
+#pragma version 8
+
+// Global state schema: 2 units, 0 bytes
+// Local state schema: 0 uints, 0 bytes
+
+// Box size: 5 + 8 + 10 + 8: 31 bytes
+// Key size: 32 bytes (Algorand Public Key)
+// Global state keys
+// MBR:  2500 + 400 * (box_size + key_size) = 27700 MicroAlgos
+
+// Box Storage keys
+
+// Global state keys
+
+// if Txn.ApplicationID == 0:
+  txn ApplicationID
+  pushint 0
+  ==
+  bz l0_end
+  // then:
+    // app_global_put(USERS, 0)
+    pushbytes "users" // USERS
+    pushint 0
+    app_global_put
+    // exit(1)
+    pushint 1
+    return
+  l0_end: // end
+
+// switch Txn.OnCompletion:
+txn OnCompletion
+pushint 0 // NoOp
+==
+bnz main
+txn OnCompletion
+pushint 1 // OptIn
+==
+bnz opt_in
+txn OnCompletion
+pushint 2 // CloseOut
+==
+bnz close_out
+txn OnCompletion
+pushint 4 // UpdateApplication
+==
+bnz update_app
+txn OnCompletion
+pushint 5 // DeleteApplication
+==
+bnz delete_app
+err // unexpected value
+
+// block opt_in
+opt_in:
+  // Create a payment txn to cover MBR for boxes
+  // assert(Gtxn[-1].TypeEnum == Pay)
+  txn GroupIndex
+  pushint 1
+  -
+  gtxns TypeEnum
+  pushint 1 // Pay
+  ==
+  assert
+  // assert(Gtxn[-1].Sender == Txn.Sender)
+  txn GroupIndex
+  pushint 1
+  -
+  gtxns Sender
+  txn Sender
+  ==
+  assert
+  // assert(Gtxn[-1].Receiver == Global.CurrentApplicationAddress)
+  txn GroupIndex
+  pushint 1
+  -
+  gtxns Receiver
+  global CurrentApplicationAddress
+  ==
+  assert
+  // assert(Gtxn[-1].Amount >= 27700)
+  txn GroupIndex
+  pushint 1
+  -
+  gtxns Amount
+  pushint 27700
+  >=
+  assert
+  
+  // Create & initialize box to store UserLoanInfo
+  // int hasCurrentLoan = 0 [slot 0]
+  pushint 0
+  store 0 // hasCurrentLoan
+  // int loanAmount = 0 [slot 1]
+  pushint 0
+  store 1 // loanAmount
+  // bytes repaymentDate = '' [slot 2]
+  pushbytes ""
+  store 2 // repaymentDate
+  // int loanRepaymentAmount = 0 [slot 3]
+  pushint 0
+  store 3 // loanRepaymentAmount
+  
+  // box<UserLoanInfo> info_box = CreateBox(Txn.Sender) [slot 4]
+  txn Sender
+  dup
+  pushint 34
+  box_create
+  assert // assert created
+  store 4 // info_box
+  // info_box.hasCurrentLoan = hasCurrentLoan [box]
+  load 4 // box key info_box
+  pushint 0 // offset
+  load 0 // hasCurrentLoan
+  itob
+  box_replace // info_box.hasCurrentLoan
+  // info_box.loanAmount = loanAmount [box]
+  load 4 // box key info_box
+  pushint 8 // offset
+  load 1 // loanAmount
+  itob
+  box_replace // info_box.loanAmount
+  // info_box.repaymentDate = repaymentDate [box]
+  load 4 // box key info_box
+  pushint 16 // offset
+  load 2 // repaymentDate
+  box_replace // info_box.repaymentDate
+  // info_box.loanRepaymentAmount = loanRepaymentAmount [box]
+  load 4 // box key info_box
+  pushint 26 // offset
+  load 3 // loanRepaymentAmount
+  itob
+  box_replace // info_box.loanRepaymentAmount
+  
+  // app_global_put(USERS, app_global_get(USERS) + 1)
+  pushbytes "users" // USERS
+  pushbytes "users" // USERS
+  app_global_get
+  pushint 1
+  +
+  app_global_put
+  // exit(1)
+  pushint 1
+  return
+
+// block close_out
+close_out:
+  // app_global_put(USERS, app_global_get(USERS) - 1)
+  pushbytes "users" // USERS
+  pushbytes "users" // USERS
+  app_global_get
+  pushint 1
+  -
+  app_global_put
+  // exit(1)
+  pushint 1
+  return
+
+// block update_app
+update_app:
+  // exit(Txn.Sender == Global.CreatorAddress)
+  txn Sender
+  global CreatorAddress
+  ==
+  return
+
+// block delete_app
+delete_app:
+  // exit(Txn.Sender == Global.CreatorAddress)
+  txn Sender
+  global CreatorAddress
+  ==
+  return
+
+// block main
+main:
+  // switch Txn.ApplicationArgs[0]:
+  txna ApplicationArgs 0
+  pushbytes "issue_asa"
+  ==
+  bnz main__issue_asa
+  txna ApplicationArgs 0
+  pushbytes "grant_loan"
+  ==
+  bnz main__grant_loan
+  txna ApplicationArgs 0
+  pushbytes "receive_loan_repayment"
+  ==
+  bnz main__receive_loan_repayment
+  err // unexpected value
+  
+  // block issue_asa
+  main__issue_asa:
+    // assert(Txn.Sender == Global.CreatorAddress)
+    txn Sender
+    global CreatorAddress
+    ==
+    assert
+    // assert(app_global_get(ASSET_ID) == 0)
+    pushbytes "asset_id" // ASSET_ID
+    app_global_get
+    pushint 0
+    ==
+    assert
+    
+    // inner_txn:
+    itxn_begin
+      // TypeEnum: Acfg
+      pushint 3 // Acfg
+      itxn_field TypeEnum
+      // Sender: Global.CurrentApplicationAddress
+      global CurrentApplicationAddress
+      itxn_field Sender
+      // ConfigAssetTotal: btoi(Txn.ApplicationArgs[1])
+      txna ApplicationArgs 1
+      btoi
+      itxn_field ConfigAssetTotal
+      // ConfigAssetDecimals: 2
+      pushint 2
+      itxn_field ConfigAssetDecimals
+      // ConfigAssetDefaultFrozen: 0
+      pushint 0
+      itxn_field ConfigAssetDefaultFrozen
+      // ConfigAssetUnitName: Txn.ApplicationArgs[2]
+      txna ApplicationArgs 2
+      itxn_field ConfigAssetUnitName
+      // ConfigAssetName: Txn.ApplicationArgs[3]
+      txna ApplicationArgs 3
+      itxn_field ConfigAssetName
+      // ConfigAssetManager: Global.CurrentApplicationAddress
+      global CurrentApplicationAddress
+      itxn_field ConfigAssetManager
+      // Fee: 0
+      pushint 0
+      itxn_field Fee
+    itxn_submit
+    // end inner_txn
+    
+    // app_global_put(ASSET_ID, Itxn.CreatedAssetID)
+    pushbytes "asset_id" // ASSET_ID
+    itxn CreatedAssetID
+    app_global_put
+    // log(itob(Itxn.CreatedAssetID))
+    itxn CreatedAssetID
+    itob
+    log
+    // exit(1)
+    pushint 1
+    return
+  
+  // block grant_loan
+  main__grant_loan:
+    // int loanAmount = btoi(Txn.ApplicationArgs[1]) [slot 0]
+    txna ApplicationArgs 1
+    btoi
+    store 0 // loanAmount
+    // bytes repaymentDate = Txn.ApplicationArgs[2] [slot 1]
+    txna ApplicationArgs 2
+    store 1 // repaymentDate
+    // int loanRepaymentAmount = loanAmount [slot 2]
+    load 0 // loanAmount
+    store 2 // loanRepaymentAmount
+    
+    // box<UserLoanInfo> info_box = OpenBox(Txn.Sender) [slot 3]
+    txn Sender
+    dup
+    box_len
+    assert // exists
+    pushint 34
+    ==
+    assert // len(box) == {self.struct_name}.size
+    store 3 // info_box
+    // assert(info_box.hasCurrentLoan == 0)
+    load 3 // box key info_box
+    pushint 0 // offset
+    pushint 8 // size
+    box_extract // info_box.hasCurrentLoan
+    btoi
+    pushint 0
+    ==
+    assert
+    
+    // inner_txn:
+    itxn_begin
+      // TypeEnum: Axfer
+      pushint 4 // Axfer
+      itxn_field TypeEnum
+      // Sender: Global.CurrentApplicationAddress
+      global CurrentApplicationAddress
+      itxn_field Sender
+      // XferAsset: app_global_get(ASSET_ID)
+      pushbytes "asset_id" // ASSET_ID
+      app_global_get
+      itxn_field XferAsset
+      // AssetAmount: loanAmount
+      load 0 // loanAmount
+      itxn_field AssetAmount
+      // AssetReceiver: Txn.Sender
+      txn Sender
+      itxn_field AssetReceiver
+      // Fee: 0
+      pushint 0
+      itxn_field Fee
+    itxn_submit
+    // end inner_txn
+    
+    // info_box.hasCurrentLoan = 1 [box]
+    load 3 // box key info_box
+    pushint 0 // offset
+    pushint 1
+    itob
+    box_replace // info_box.hasCurrentLoan
+    // info_box.loanAmount = loanAmount [box]
+    load 3 // box key info_box
+    pushint 8 // offset
+    load 0 // loanAmount
+    itob
+    box_replace // info_box.loanAmount
+    // info_box.repaymentDate = repaymentDate [box]
+    load 3 // box key info_box
+    pushint 16 // offset
+    load 1 // repaymentDate
+    box_replace // info_box.repaymentDate
+    // info_box.loanRepaymentAmount = loanRepaymentAmount [box]
+    load 3 // box key info_box
+    pushint 26 // offset
+    load 2 // loanRepaymentAmount
+    itob
+    box_replace // info_box.loanRepaymentAmount
+    
+    // exit(1)
+    pushint 1
+    return
+  
+  // block receive_loan_repayment
+  main__receive_loan_repayment:
+    
+    // box<UserLoanInfo> info_box = OpenBox(Txn.Sender) [slot 0]
+    txn Sender
+    dup
+    box_len
+    assert // exists
+    pushint 34
+    ==
+    assert // len(box) == {self.struct_name}.size
+    store 0 // info_box
+    
+    // assert(Gtxn[-1].TypeEnum == Axfer)
+    txn GroupIndex
+    pushint 1
+    -
+    gtxns TypeEnum
+    pushint 4 // Axfer
+    ==
+    assert
+    // assert(Gtxn[-1].Sender == Txn.Sender)
+    txn GroupIndex
+    pushint 1
+    -
+    gtxns Sender
+    txn Sender
+    ==
+    assert
+    // assert(Gtxn[-1].AssetReceiver == Global.CurrentApplicationAddress)
+    
+    // if Gtxn[-1].AssetAmount <= info_box.loanRepaymentAmount:
+      txn GroupIndex
+      pushint 1
+      -
+      gtxns AssetAmount
+      load 0 // box key info_box
+      pushint 26 // offset
+      pushint 8 // size
+      box_extract // info_box.loanRepaymentAmount
+      btoi
+      <=
+      bz l1_else
+      // then:
+        // info_box.loanRepaymentAmount = info_box.loanRepaymentAmount - Gtxn[-1].AssetAmount [box]
+        load 0 // box key info_box
+        pushint 26 // offset
+        load 0 // box key info_box
+        pushint 26 // offset
+        pushint 8 // size
+        box_extract // info_box.loanRepaymentAmount
+        btoi
+        txn GroupIndex
+        pushint 1
+        -
+        gtxns AssetAmount
+        -
+        itob
+        box_replace // info_box.loanRepaymentAmount
+      b l1_end
+      l1_else:
+      // else:
+        // info_box.loanRepaymentAmount = 0 [box]
+        load 0 // box key info_box
+        pushint 26 // offset
+        pushint 0
+        itob
+        box_replace // info_box.loanRepaymentAmount
+        // info_box.loanAmount = 0 [box]
+        load 0 // box key info_box
+        pushint 8 // offset
+        pushint 0
+        itob
+        box_replace // info_box.loanAmount
+        // info_box.hasCurrentLoan = 0 [box]
+        load 0 // box key info_box
+        pushint 0 // offset
+        pushint 0
+        itob
+        box_replace // info_box.hasCurrentLoan
+      l1_end: // end
+    
+    // exit(1)
+    pushint 1
+    return
+  
+  // exit(1)
+  pushint 1
+  return
