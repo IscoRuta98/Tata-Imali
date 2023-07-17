@@ -24,9 +24,8 @@ DB_CONNECTION_STRING="<MONGODB CONNECTION STRING>"
 
 ALGOD_ADDRESS="<INSET_ALGOD_ADDRESS>"
 ALGOD_TOKEN="<INSERT_ALGOD_TOKEN>"
-CREATOR_MNEMONIC="<INSERT_MNEMONIC>"
 ```
 
 4. Next run `uvicorn main:app` to start the server locally.
 
-5. Once the server is running, navigate to `http://127.0.0.1:8000/docs#/`. This opens an interactive FAST API docs for this project.
+5. Once the server is running, navigate to `http://127.0.0.1:8000/docs#/`, as this opens an interactive FAST API docs for this project.

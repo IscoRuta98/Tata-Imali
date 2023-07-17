@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { UntypedFormBuilder, FormControl, UntypedFormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { SessionService } from '../state';
 import Swal from 'sweetalert2';
@@ -10,10 +10,10 @@ import Swal from 'sweetalert2';
   styleUrls: ['./signup.component.scss']
 })
 export class SignupComponent implements OnInit {
-  registrationForm: FormGroup;
+  registrationForm: UntypedFormGroup;
 
   constructor(
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private router: Router,
     private sessionService: SessionService
   ) {
@@ -23,7 +23,7 @@ export class SignupComponent implements OnInit {
   ngOnInit(): void {
   }
 
-  generateRegistratioinForm(): FormGroup{
+  generateRegistratioinForm(): UntypedFormGroup{
     return this.formBuilder.group({
       userName: [''],
       cellPhoneNumber: [''],
@@ -39,7 +39,7 @@ export class SignupComponent implements OnInit {
     }
   }
 
-  async createAccount(form: FormGroup) {
+  async createAccount(form: UntypedFormGroup) {
     form.markAllAsTouched();
     if (this.registrationForm.valid) {
       const { userName, cellPhoneNumber, password } = this.registrationForm.value;

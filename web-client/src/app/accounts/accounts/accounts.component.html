@@ -1,26 +1,132 @@
 <div class="container">
-  <div class="row justify-content-center">
-    <div class="col-sm-8 col-md-6 col-lg-4">
+  <div class="row justify-content-center bg-dark">
+    <div class="col-sm-6 col-md-8 col-lg-6">
       <div class="text-center">
         <img
           src="/assets/Tata-iMali-logo-colour.png"
           alt="Tata-Imali Logo"
           class="brand-image"
           height="100"
-          width="200"
+          width="250"
           rounded
         />
+        <h4 class="mb-3 font-weight-bolder to-light signup-title">
+          Welcome {{ sessionQuery.userName | async }}!
+        </h4>
       </div>
-      <mat-tab-group>
-        <mat-tab label="Request Loan">
-          <!-- Request Loan Form -->
-          <h3 class="mb-3 font-weight-bolder signup-title">Request Loan</h3>
-        </mat-tab>
-        <mat-tab label="Settle Debt">
-          <!-- Settle Debt Form -->
-          <h3 class="mb-3 font-weight-bolder signup-title">Settle Debt</h3>
-        </mat-tab>
-      </mat-tab-group>
+      <div class="card bg-dark">
+        <div class="card-body">
+          <ul class="nav nav-tabs" role="tablist">
+            <li class="nav-item">
+              <a
+                class="nav-link signup-title"
+                [class.active]="activeTab === 'requestLoan'"
+                (click)="changeTab('requestLoan')"
+                >Request Loan</a
+              >
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link signup-title"
+                [class.active]="activeTab === 'settleDebt'"
+                (click)="changeTab('settleDebt')"
+                >Settle Debt</a
+              >
+            </li>
+          </ul>
+
+          <div class="tab-content">
+            <div
+              class="tab-pane signup-title"
+              [class.active]="activeTab === 'requestLoan'"
+              id="requestLoanTab"
+              role="tabpanel"
+            >
+              <!-- Request Loan form goes here -->
+              <h4 class="text-center">Request Loan</h4>
+              <div class="card-body">
+                <form (submit)="onSubmitLoanRequest()">
+                  <div class="form-group">
+                    <label for="amountBorrowed">Amount Borrowed (ZAR)</label>
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="amountBorrowed"
+                      name="amountBorrowed"
+                      [(ngModel)]="loan.amountBorrowed"
+                      required
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="amountOwing">Amount Owing</label>
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="amountOwing"
+                      name="amountOwing"
+                      [value]="loan.amountBorrowed"
+                      disabled
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="repayment">Repayment Date</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="repayment"
+                      name="repayment"
+                      [value]="formattedRepaymentDate"
+                      disabled
+                    />
+                  </div>
+                  <button type="submit" class="btn btn-primary centered-btn">
+                    Request Loan
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            <div
+              class="tab-pane signup-title"
+              [class.active]="activeTab === 'settleDebt'"
+              id="settleDebtTab"
+              role="tabpanel"
+            >
+              <!-- Settle Debt form goes here -->
+              <h4 class="text-center">Settle Debt</h4>
+              <div class="card-body">
+                <form (submit)="onSubmitRepaymentLoan()">
+                  <div class="form-group">
+                    <label for="amountSettled">Amount to Settle (ZAR)</label>
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="amountSettled"
+                      name="amountSettled"
+                      [(ngModel)]="existingLoan.amount"
+                      required
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="repayment">Repayment Date</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="repayment"
+                      name="repayment"
+                      [value]="existingLoan.repaymentDate"
+                      disabled
+                    />
+                  </div>
+                  <button type="submit" class="btn btn-primary centered-btn">
+                    Settle Debt
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
