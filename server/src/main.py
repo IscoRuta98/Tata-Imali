@@ -31,11 +31,16 @@ origins = [str(app_settings.primary_origin)]
 if app_settings.staging_mode:
     origins.append("http://localhost:4200")
 
+origins = [
+    "http://localhost:4200",
+]
+
 
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
+    allow_origins=origins,
     allow_methods=["GET", "POST", "HEAD", "DELETE"],
     allow_headers=["*"],
 )

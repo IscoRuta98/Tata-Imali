@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
+import { SessionService } from '../state';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-login',
@@ -12,7 +14,8 @@ export class LoginComponent implements OnInit {
 
   constructor(
     private formBuilder: FormBuilder,
-    private router: Router
+    private router: Router,
+    private sessionService: SessionService
   ) {
     this.loginForm = this.generateloginForm();
    }
@@ -34,12 +37,29 @@ export class LoginComponent implements OnInit {
     }
   }
 
-  login(form: FormGroup) {
+  async login(form: FormGroup) {
     form.markAllAsTouched();
-    if (form.valid) {
-      console.log('Button do something')
-      this.router.navigate(['/login']);
+    if (this.loginForm.valid) {
+      const { userName, password } = this.loginForm.value;
+      await this.sessionService.login(userName, password)
+      .then((res: any) => {
+        console.log(res);
+          Swal.fire({
+            icon: 'success',
+            titleText: 'Account Created!',
+            confirmButtonText: 'OK'
+          });
+          this.router.navigate(['/accounts']);
+      })
+      .catch(error => {
+        Swal.fire({
+          icon: 'error',
+          titleText: 'Account not Created!',
+          text: error,
+          confirmButtonText: 'OK'
+        });
+      })
+    }
+    this.loginForm.reset();
     }
   }
-
-}

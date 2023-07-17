@@ -27,4 +27,3 @@ class UserDetailStorable(Model):
     hash_password: str
     algorandAddress: str
     algorandPrivateKey: str
-    algorandTransactionSigner: Any

@@ -81,7 +81,7 @@ async def request_loan(engine: Engine, params: LoanRequest):
 
     grant_loan(
         existing_user.algorandAddress,
-        existing_user.algorandTransactionSigner,
+        AccountTransactionSigner(existing_user.algorandPrivateKey),
         params.amount,
         params.repaymentDate,
     )

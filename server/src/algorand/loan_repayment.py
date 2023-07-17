@@ -80,5 +80,5 @@ async def loan_repayment(engine: Engine, params: ReceiveLoanRepayment):
         app_address,
         asset_id,
         existing_user.algorandAddress,
-        existing_user.algorandTransactionSigner,
+        AccountTransactionSigner(existing_user.algorandPrivateKey),
     )

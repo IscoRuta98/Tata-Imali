@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { SessionService } from '../state';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-signup',
@@ -12,7 +14,8 @@ export class SignupComponent implements OnInit {
 
   constructor(
     private formBuilder: FormBuilder,
-    private router: Router
+    private router: Router,
+    private sessionService: SessionService
   ) {
     this.registrationForm = this.generateRegistratioinForm();
    }
@@ -36,12 +39,30 @@ export class SignupComponent implements OnInit {
     }
   }
 
-  createAccount(form: FormGroup) {
+  async createAccount(form: FormGroup) {
     form.markAllAsTouched();
-    if (form.valid) {
-      console.log('Button do something')
-      this.router.navigate(['/login']);
+    if (this.registrationForm.valid) {
+      const { userName, cellPhoneNumber, password } = this.registrationForm.value;
+      await this.sessionService.signup(userName, cellPhoneNumber, password)
+      .then((res: any) => {
+        console.log(res);
+          Swal.fire({
+            icon: 'success',
+            titleText: 'Account Created!',
+            confirmButtonText: 'OK'
+          });
+          this.router.navigate(['/login']);
+      })
+      .catch(error => {
+        Swal.fire({
+          icon: 'error',
+          titleText: 'Account not Created!',
+          text: error,
+          confirmButtonText: 'OK'
+        });
+      })
     }
+    this.registrationForm.reset();
   }
 
 }

@@ -2,8 +2,7 @@ from fastapi import HTTPException
 from passlib.context import CryptContext
 
 from algorand.generate_account import generate_keypair, fund_new_account
-from algosdk.atomic_transaction_composer import (
-    AccountTransactionSigner)
+from algosdk.atomic_transaction_composer import AccountTransactionSigner
 
 from common.types import Engine
 from auth.schema.actions import (
@@ -41,7 +40,6 @@ async def create_user(engine: Engine, params: CreateUser) -> CreateUserResult:
         hash_password=hash_password,
         algorandAddress=address,
         algorandPrivateKey=private_key,
-        algorandTransactionSigner = AccountTransactionSigner(private_key)
     )
     await engine.save(new_user)
     user_display = UserInformation(
